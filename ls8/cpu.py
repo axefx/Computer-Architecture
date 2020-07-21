@@ -27,6 +27,16 @@ class CPU:
             0b00000000,
             0b00000001, # HLT
         ]
+        if sys.argv[1]:
+            program = []
+            with open(sys.argv[1]) as f:
+                for line in f:
+                    binary_strings = line.split('#')[0].strip()
+                    if binary_strings:
+                        integer_values = int(binary_strings, 2)
+                        # print(f"binary_strings: {binary_strings}")
+                        # print(f"integer_values: {integer_values}")
+                        program.append(integer_values)
 
         for instruction in program:
             self.ram[address] = instruction
@@ -38,6 +48,8 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
+        elif op == "MUL":
+            self.reg[reg_a] *= self.reg[reg_b]
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -67,6 +79,7 @@ class CPU:
         HLT = 0b00000001
         LDI = 0b10000010
         PRN = 0b01000111
+        MUL = 0b10100010
 
         running = True
         while running:
@@ -85,6 +98,9 @@ class CPU:
             elif instruction_register == PRN:
                 print(self.reg[operand_a])
                 self.pc += 2
+            elif instruction_register == MUL:
+                self.alu("MUL", operand_a, operand_b)
+                self.pc += 3
             else:
                 print(f"Unknown instruction {instruction_register}")
                 running = False
