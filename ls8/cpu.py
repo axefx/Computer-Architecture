@@ -10,6 +10,8 @@ class CPU:
         self.pc = 0
         self.reg = [0] * 8
         self.ram = [0] * 256
+        self.SP = 7
+        self.reg[self.SP] = 0xf4
 
     def load(self):
         """Load a program into memory."""
@@ -34,8 +36,6 @@ class CPU:
                     binary_strings = line.split('#')[0].strip()
                     if binary_strings:
                         integer_values = int(binary_strings, 2)
-                        # print(f"binary_strings: {binary_strings}")
-                        # print(f"integer_values: {integer_values}")
                         program.append(integer_values)
 
         for instruction in program:
@@ -80,6 +80,8 @@ class CPU:
         LDI = 0b10000010
         PRN = 0b01000111
         MUL = 0b10100010
+        PUSH = 0b01000101
+        POP = 0b01000110
 
         running = True
         while running:
@@ -89,7 +91,6 @@ class CPU:
             operand_b = self.ram_read(self.pc + 2)
             # print(hex(instruction_register))
             if instruction_register == HLT:
-                print("halting")
                 running = False
                 self.pc += 1
             elif instruction_register == LDI:
@@ -101,6 +102,18 @@ class CPU:
             elif instruction_register == MUL:
                 self.alu("MUL", operand_a, operand_b)
                 self.pc += 3
+            elif instruction_register == PUSH:
+                self.reg[self.SP] -= 1
+                value = self.reg[operand_a]
+                address = self.reg[self.SP]
+                self.ram_write(self.reg[self.SP], value)
+                self.pc += 2
+            elif instruction_register == POP:
+                address = self.reg[self.SP]
+                value = self.ram_read(address)
+                self.reg[operand_a] = value
+                self.reg[self.SP] += 1
+                self.pc += 2
             else:
                 print(f"Unknown instruction {instruction_register}")
                 running = False
