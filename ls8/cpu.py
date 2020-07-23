@@ -12,6 +12,7 @@ class CPU:
         self.ram = [0] * 256
         self.SP = 7
         self.reg[self.SP] = 0xf4
+        self.fl = {"E":0,"L":0,"G":0}
 
     def load(self):
         """Load a program into memory."""
@@ -50,6 +51,17 @@ class CPU:
             self.reg[reg_a] += self.reg[reg_b]
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
+        elif op == "CMP":
+            if reg_a == reg_b:
+                self.fl['E'] = 1
+            elif reg_a < reg_b:
+                self.fl['L'] = 1
+            elif reg_a > reg_b:
+                self.fl['G'] = 1
+        elif op == "INC":
+            self.reg[reg_a] += 1
+        elif op == "DEC":
+            self.reg[reg_a] -= 1
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
@@ -85,9 +97,18 @@ class CPU:
         CALL = 0b01010000
         ADD = 0b10100000
         RET = 0b00010001
+        CMP = 0b10100111
+        JEQ = 0b01010101
+        LD = 0b10000011
+        PRA = 0b01001000
+        INC = 0b01100101
+        DEC = 0b01100110
+        JMP = 0b01010100
+        ST = 0b10000100
 
         running = True
         while running:
+            # self.trace()
             # fetch instruction pointed to by the pc
             instruction_register = self.ram_read(self.pc)
             operand_a = self.ram_read(self.pc + 1)
@@ -138,6 +159,37 @@ class CPU:
                 self.reg[self.SP] += 1
                 # Set the PC to the return address
                 self.pc = ret_address
+            elif instruction_register == CMP:
+                reg_a = self.reg[operand_a]
+                reg_b = self.reg[operand_b]
+                self.alu("CMP", reg_a, reg_b)
+                self.pc += 3
+            elif instruction_register == JEQ:
+                if self.fl["E"] == 1:
+                    self.pc = self.reg[operand_a]
+                else:
+                    self.pc += 2
+            elif instruction_register == LD:
+                self.reg[operand_a] = self.ram[self.reg[operand_b]]
+                self.pc += 3
+            elif instruction_register == PRA:
+                value = self.reg[operand_a]
+                if isinstance(value, int):
+                    print(chr(value))
+                else:
+                    print(value)
+                self.pc += 2
+            elif instruction_register == INC:
+                self.alu("INC", operand_a, operand_b)
+                self.pc += 2
+            elif instruction_register == DEC:
+                self.alu("DEC", operand_a, operand_b)
+                self.pc += 2
+            elif instruction_register == JMP:
+                self.pc = self.reg[operand_a]
+            elif instruction_register == ST:
+                self.ram[operand_a] = operand_b
+                self.pc += 3
             else:
                 print(f"Unknown instruction {instruction_register}")
                 print("{0:b}".format(instruction_register))
