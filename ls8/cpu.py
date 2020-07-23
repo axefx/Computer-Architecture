@@ -82,6 +82,9 @@ class CPU:
         MUL = 0b10100010
         PUSH = 0b01000101
         POP = 0b01000110
+        CALL = 0b01010000
+        ADD = 0b10100000
+        RET = 0b00010001
 
         running = True
         while running:
@@ -106,7 +109,7 @@ class CPU:
                 self.reg[self.SP] -= 1
                 value = self.reg[operand_a]
                 address = self.reg[self.SP]
-                self.ram_write(self.reg[self.SP], value)
+                self.ram_write(address, value)
                 self.pc += 2
             elif instruction_register == POP:
                 address = self.reg[self.SP]
@@ -114,8 +117,30 @@ class CPU:
                 self.reg[operand_a] = value
                 self.reg[self.SP] += 1
                 self.pc += 2
+            elif instruction_register == CALL:
+                # Get address of the next instruction
+                previous_address = self.pc + 2
+                # Push that on the stack
+                self.reg[self.SP] -= 1
+                address = self.reg[self.SP]
+                self.ram[address] = previous_address
+                # Set the PC to the subroutine address
+                reg_num = self.ram[self.pc + 1]
+                subroutine_addr = self.reg[reg_num]
+                self.pc = subroutine_addr
+            elif instruction_register == ADD:
+                self.alu("ADD", operand_a, operand_b)
+                self.pc += 3
+            elif instruction_register == RET:
+                # Get return address from the top of the stack
+                address = self.reg[self.SP]
+                ret_address = self.ram[address]
+                self.reg[self.SP] += 1
+                # Set the PC to the return address
+                self.pc = ret_address
             else:
                 print(f"Unknown instruction {instruction_register}")
+                print("{0:b}".format(instruction_register))
                 running = False
 
     def ram_read(self, mar):
